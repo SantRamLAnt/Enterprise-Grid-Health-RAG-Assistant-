@@ -3,8 +3,6 @@ import pandas as pd
 import time
 import json
 from datetime import datetime
-import plotly.graph_objects as go
-import plotly.express as px
 from typing import Dict, List
 
 # Configure page
@@ -52,6 +50,14 @@ st.markdown("""
         background-color: #f1f8e9;
         border-left: 4px solid #4caf50;
     }
+    .architecture-box {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border: 2px solid #dee2e6;
+        margin: 1rem 0;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,6 +91,13 @@ def main():
     # Header
     st.markdown('<h1 class="main-header">🏆 Enterprise Grid Health RAG Assistant</h1>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #666;">Production-Ready ChatGPT Integration for Field Operations</p>', unsafe_allow_html=True)
+    
+    # Introduction callout for hiring manager
+    st.info("""
+    👋 **Welcome to my technical portfolio preview!** This interactive demo showcases a production-grade RAG system 
+    I developed for enterprise field operations. Click through the tabs to explore the technical architecture, 
+    business impact analysis, and live functionality. I'd be excited to discuss how similar solutions could benefit Eversource's grid operations.
+    """, icon="💡")
     
     # Sidebar
     with st.sidebar:
@@ -210,41 +223,26 @@ def main():
                 st.write(f"• {step}")
         
         # Architecture diagram placeholder
-        st.subheader("System Architecture Diagram")
+        st.subheader("System Architecture Flow")
         
-        # Create a simple flow diagram with plotly
-        fig = go.Figure()
-        
-        # Add nodes
-        nodes = [
-            {"name": "Field Technician", "x": 0, "y": 3, "color": "#ff7f0e"},
-            {"name": "Voice/Text Input", "x": 1, "y": 3, "color": "#2ca02c"},
-            {"name": "FastAPI Gateway", "x": 2, "y": 3, "color": "#1f77b4"},
-            {"name": "LangChain Orchestrator", "x": 3, "y": 3, "color": "#d62728"},
-            {"name": "ChromaDB", "x": 3, "y": 4, "color": "#9467bd"},
-            {"name": "GPT-4", "x": 3, "y": 2, "color": "#8c564b"},
-            {"name": "Technical Manuals", "x": 4, "y": 4, "color": "#e377c2"}
-        ]
-        
-        for node in nodes:
-            fig.add_trace(go.Scatter(
-                x=[node["x"]], y=[node["y"]], 
-                mode='markers+text',
-                marker=dict(size=60, color=node["color"]),
-                text=node["name"],
-                textposition="middle center",
-                showlegend=False
-            ))
-        
-        fig.update_layout(
-            title="RAG System Data Flow",
-            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            height=400,
-            plot_bgcolor='white'
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        # Simple text-based architecture diagram
+        st.markdown("""
+        <div class="architecture-box">
+        <h4>📱 Field Technician</h4>
+        ⬇️<br>
+        <h4>🎤 Voice/Text Input (Azure Speech)</h4>
+        ⬇️<br>
+        <h4>🚀 FastAPI Gateway</h4>
+        ⬇️<br>
+        <h4>🔗 LangChain Orchestrator</h4>
+        ⬇️⬆️<br>
+        <h4>🗄️ ChromaDB Vector Store ↔️ 📚 Technical Manuals</h4>
+        ⬇️⬆️<br>
+        <h4>🧠 GPT-4 Response Generation</h4>
+        ⬇️<br>
+        <h4>📋 Cited Answer + Sources</h4>
+        </div>
+        """, unsafe_allow_html=True)
     
     with tab3:
         st.header("📈 Business Impact & ROI")
@@ -284,35 +282,29 @@ def main():
                 help="Reduced downtime and faster resolution"
             )
         
-        # ROI Chart
+        # ROI Analysis
         st.subheader("Return on Investment Analysis")
         
-        months = list(range(1, 13))
-        cumulative_savings = [month * 190000 for month in months]  # $190k per month
-        implementation_cost = [1500000] + [0] * 11  # $1.5M initial investment
-        net_benefit = [savings - sum(implementation_cost[:i+1]) for i, savings in enumerate(cumulative_savings)]
+        # Simple text-based ROI breakdown
+        roi_data = {
+            "Month": [1, 3, 6, 9, 12],
+            "Cumulative Savings": ["$190K", "$570K", "$1.14M", "$1.71M", "$2.28M"],
+            "Net Benefit": ["-$1.31M", "-$930K", "-$360K", "+$210K", "+$780K"],
+            "ROI %": ["-87%", "-62%", "-24%", "+14%", "+52%"]
+        }
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=months, y=cumulative_savings, name="Cumulative Savings", line=dict(color='green')))
-        fig.add_trace(go.Scatter(x=months, y=net_benefit, name="Net Benefit", line=dict(color='blue')))
-        fig.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="Break-even")
+        roi_df = pd.DataFrame(roi_data)
+        st.dataframe(roi_df, use_container_width=True)
         
-        fig.update_layout(
-            title="12-Month ROI Projection",
-            xaxis_title="Months After Deployment",
-            yaxis_title="USD ($)",
-            yaxis_tickformat="$,.0f"
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        st.info("💡 **Break-even point**: Month 8 | **12-month ROI**: 52%")
         
         # Use cases
         st.subheader("Key Use Cases")
         use_cases = [
-            {"scenario": "Emergency Response", "before": "45 min", "after": "12 min", "impact": "67% faster response"},
-            {"scenario": "Equipment Troubleshooting", "before": "2.5 hours", "after": "45 min", "impact": "70% time reduction"},
-            {"scenario": "Safety Procedure Lookup", "before": "15 min", "after": "2 min", "impact": "87% faster access"},
-            {"scenario": "Maintenance Planning", "before": "3 hours", "after": "1 hour", "impact": "67% efficiency gain"}
+            {"Scenario": "Emergency Response", "Before": "45 min", "After": "12 min", "Impact": "67% faster response"},
+            {"Scenario": "Equipment Troubleshooting", "Before": "2.5 hours", "After": "45 min", "Impact": "70% time reduction"},
+            {"Scenario": "Safety Procedure Lookup", "Before": "15 min", "After": "2 min", "Impact": "87% faster access"},
+            {"Scenario": "Maintenance Planning", "Before": "3 hours", "After": "1 hour", "Impact": "67% efficiency gain"}
         ]
         
         use_case_df = pd.DataFrame(use_cases)
@@ -320,6 +312,21 @@ def main():
     
     with tab4:
         st.header("🔧 Technical Implementation Details")
+        
+        # Eversource-specific section
+        st.markdown("### 🏢 Relevance to Eversource Operations")
+        eversource_applications = {
+            "Grid Modernization": "Smart grid documentation and procedure automation",
+            "Storm Response": "Rapid access to emergency restoration procedures", 
+            "Asset Management": "Equipment maintenance and inspection protocols",
+            "Regulatory Compliance": "Instant access to safety and regulatory requirements",
+            "Training & Onboarding": "New technician knowledge transfer acceleration"
+        }
+        
+        for application, description in eversource_applications.items():
+            st.write(f"**{application}**: {description}")
+        
+        st.markdown("---")
         
         col1, col2 = st.columns(2)
         
@@ -342,27 +349,20 @@ def main():
             st.write("• Confidence scoring for all responses")
         
         with col2:
-            st.subheader("Performance Optimization")
+            st.subheader("Performance Optimization Results")
             
-            # Performance comparison chart
-            methods = ["Baseline", "Prompt Engineering", "Chunk Optimization", "Aggressive Filtering", "Combined Approach"]
-            hallucination_rate = [0.23, 0.18, 0.12, 0.09, 0.06]
-            response_quality = [0.72, 0.76, 0.84, 0.88, 0.94]
+            optimization_data = {
+                "Method": ["Baseline", "Prompt Engineering", "Chunk Optimization", "Aggressive Filtering", "Combined Approach"],
+                "Hallucination Rate": ["23%", "18%", "12%", "9%", "6%"],
+                "Response Quality": ["72%", "76%", "84%", "88%", "94%"]
+            }
             
-            fig = go.Figure()
-            fig.add_trace(go.Bar(name="Hallucination Rate", x=methods, y=hallucination_rate, yaxis="y"))
-            fig.add_trace(go.Scatter(name="Response Quality", x=methods, y=response_quality, yaxis="y2", mode="lines+markers"))
+            opt_df = pd.DataFrame(optimization_data)
+            st.dataframe(opt_df, use_container_width=True)
             
-            fig.update_layout(
-                title="Optimization Impact Comparison",
-                yaxis=dict(title="Hallucination Rate", side="left"),
-                yaxis2=dict(title="Response Quality Score", side="right", overlaying="y"),
-                height=400
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
+            st.success("🎯 **Key Insight**: Chunk optimization + aggressive filtering > prompt engineering")
         
-        st.subheader("Production Deployment")
+        st.subheader("Production Deployment Features")
         
         deployment_features = {
             "🔐 Security": ["API key management", "Role-based access control", "Audit logging", "Data encryption"],
