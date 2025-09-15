@@ -2,7 +2,7 @@
 # Enterprise Grid Health RAG Assistant - Enhanced Version
 
 ## Overview
-This is an upgraded version of the original Streamlit app, incorporating state-of-the-art features like Grok-4 integration, hybrid retrieval, multi-modal support, hands-free operations, RBAC, and more.
+This is an upgraded version of the original Streamlit app, incorporating state-of-the-art features like Grok-4 integration, hybrid retrieval, multi-modal support, hands-free operations, RBAC, and more. Updated to fix ModuleNotFoundError by using the latest Pinecone and LangChain integrations.
 
 ## Setup
 1. Install dependencies: `pip install -r requirements.txt`
@@ -23,3 +23,4 @@ This is an upgraded version of the original Streamlit app, incorporating state-o
 - For xAI API details: https://x.ai/api
 - Customize API keys and endpoints as needed.
 - This is a complete, production-ready setup with placeholders for advanced integrations like IoT and AR.
+- Updated Pinecone client to 'pinecone' package and LangChain to 'langchain-pinecone' for compatibility.
