@@ -3,7 +3,7 @@ import streamlit as st
 import os
 from pinecone import Pinecone
 from langchain_pinecone import PineconeVectorStore
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain.llms import OpenAI  # Placeholder; replace with xAI Grok integration
