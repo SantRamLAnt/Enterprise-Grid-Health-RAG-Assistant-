@@ -1,8 +1,8 @@
 # app.py
 import streamlit as st
 import os
-import pinecone
-from langchain.vectorstores import Pinecone
+from pinecone import Pinecone
+from langchain_pinecone import PineconeVectorStore
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
@@ -51,9 +51,9 @@ os.environ["JWT_SECRET"] = "your_jwt_secret"
 
 # Initialize components
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-pinecone.init(api_key=os.environ["PINECONE_API_KEY"], environment="us-west1-gcp")
-index = pinecone.Index("grid-health")
-vectorstore = Pinecone(index, embeddings.embed_query, "text")
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+index = pc.Index("grid-health")
+vectorstore = PineconeVectorStore(index=index, embedding=embeddings, text_key="text")
 
 es = Elasticsearch([os.environ["ELASTICSEARCH_URL"]])
 
@@ -78,7 +78,7 @@ def index_documents(chunks):
 def hybrid_retrieve(query, top_k=5):
     vector_results = vectorstore.similarity_search(query, k=top_k)
     es_results = es.search(index="grid-docs", body={"query": {"match": {"text": query}}})["hits"]["hits"]
-    combined = vector_results + [doc["_source"]["text"] for doc in es_results]
+    combined = [doc.page_content for doc in vector_results] + [doc["_source"]["text"] for doc in es_results]
     # Rerank (simple dedup for now)
     unique = list(set(combined))
     return unique[:top_k]
