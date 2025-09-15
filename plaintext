@@ -1,0 +1,19 @@
+# requirements.txt
+streamlit
+pinecone
+langchain-pinecone
+langchain
+huggingface-hub
+elasticsearch
+speechrecognition
+gtts
+networkx
+matplotlib
+pyjwt
+fastapi
+uvicorn
+requests
+pydantic
+PyPDF2
+unstructured[local-inference]
+torch  # For embeddings if needed
