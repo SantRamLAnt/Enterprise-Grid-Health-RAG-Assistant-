@@ -17,3 +17,5 @@ pydantic
 PyPDF2
 unstructured[local-inference]
 torch  # For embeddings if needed
+langchain-huggingface
+sentence-transformers
