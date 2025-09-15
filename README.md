@@ -1,39 +1,25 @@
-# Enterprise Grid Health RAG Assistant
-
-🏆 Production-Ready ChatGPT Integration for Field Operations
-
-## Live Demo
-🚀 [View Interactive Demo](https://enterprise-grid-health-rag-assistant-santramlant.streamlit.app/)
+# README.md
+# Enterprise Grid Health RAG Assistant - Enhanced Version
 
 ## Overview
-This RAG (Retrieval-Augmented Generation) system provides field crews with instant, cited answers from technical manuals during critical operations. Built for enterprise-scale deployment with comprehensive monitoring and security features.
+This is an upgraded version of the original Streamlit app, incorporating state-of-the-art features like Grok-4 integration, hybrid retrieval, multi-modal support, hands-free operations, RBAC, and more.
 
-## Key Features
-- **70% Reduction** in field crew decision time
-- **Semantic Search** with ChromaDB vector database
-- **GPT-4 Integration** for natural language responses
-- **Azure Speech Services** for hands-free operation
-- **Production-Ready** with monitoring and security
+## Setup
+1. Install dependencies: `pip install -r requirements.txt`
+2. Set environment variables (API keys).
+3. Run: `streamlit run app.py`
+4. For API: Access at http://localhost:8000/docs
 
-## Technology Stack
-- 🐍 **Backend**: Python + LangChain
-- 🧠 **LLM**: OpenAI GPT-4
-- 🗄️ **Vector DB**: ChromaDB
-- 🚀 **API**: FastAPI
-- 🗣️ **Speech**: Azure Speech Services
-- 📦 **Deployment**: Docker Containers
+## Features
+- Switch to Grok-4 for advanced reasoning.
+- Hybrid vector + keyword search.
+- Voice input/output.
+- Role-based UI.
+- Document uploading and indexing.
+- Visualizations and collaborative chat.
+- Containerized with Docker and Kubernetes ready.
 
-## Business Impact
-- **$2.3M/year** operational cost savings
-- **45% increase** in field efficiency
-- **85% reduction** in procedure errors
-- **99.8% uptime** with enterprise deployment
-
-## Architecture Highlights
-- Semantic chunking with metadata preservation
-- Strict source citation requirements
-- Aggressive filtering for hallucination reduction
-- Containerized microservices architecture
-
----
-*This demo showcases production-grade AI system design with enterprise requirements in mind.*
+## Notes
+- For xAI API details: https://x.ai/api
+- Customize API keys and endpoints as needed.
+- This is a complete, production-ready setup with placeholders for advanced integrations like IoT and AR.
