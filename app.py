@@ -494,8 +494,14 @@ elif page == "📊 Multi-Modal Intelligence":
         """)
         
         if st.button("🖼️ Simulate Visual Query"):
-            st.image("https://via.placeholder.com/300x200/4facfe/ffffff?text=Transformer+Wiring+Diagram", 
-                    caption="Retrieved: Transformer Wiring Diagram - Section 4.2.1")
+            st.markdown("""
+            <div style="background: #4facfe; color: white; padding: 1rem; border-radius: 10px; text-align: center;">
+            <h4>📷 Image Recognition Result</h4>
+            <p><strong>Detected:</strong> 138kV Transformer - Model T1400</p>
+            <p><strong>Manual Section:</strong> 4.2.1 - Emergency Procedures</p>
+            <p><strong>Confidence:</strong> 94.7%</p>
+            </div>
+            """, unsafe_allow_html=True)
     
     with col2:
         st.markdown("""
@@ -508,10 +514,11 @@ elif page == "📊 Multi-Modal Intelligence":
         
         if st.button("🏗️ Simulate 3D Retrieval"):
             st.markdown("""
-            <div style="background: #f0f0f0; padding: 2rem; border-radius: 10px; text-align: center;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; text-align: center;">
             <h4>🏗️ 3D Model Viewer</h4>
-            <p>Interactive 138kV Transformer Model</p>
-            <p><em>Rotate • Zoom • Highlight Components</em></p>
+            <p><strong>Model:</strong> Interactive 138kV Transformer</p>
+            <p><strong>Features:</strong> Rotate • Zoom • Component Highlighting</p>
+            <p><strong>AR Ready:</strong> Export to mobile device</p>
             </div>
             """, unsafe_allow_html=True)
 
