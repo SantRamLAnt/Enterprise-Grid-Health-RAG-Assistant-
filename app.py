@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import time
+import random
 from datetime import datetime
 
 # Configure page
@@ -10,214 +11,502 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Initialize session state
+if 'grok_visible' not in st.session_state:
+    st.session_state.grok_visible = True
+if 'conversation_history' not in st.session_state:
+    st.session_state.conversation_history = []
+if 'user_persona' not in st.session_state:
+    st.session_state.user_persona = 'Field Technician'
+
+# Dark mode CSS with minimalist design
 st.markdown("""
 <style>
+    .stApp {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    
     .main-header {
-        font-size: 3rem;
-        color: #667eea;
+        font-size: 2.5rem;
+        color: #00d4ff;
         text-align: center;
-        margin-bottom: 2rem;
-        border-bottom: 3px solid #667eea;
-        padding: 1rem;
+        margin-bottom: 1rem;
+        font-weight: 300;
+        letter-spacing: 2px;
+    }
+    
+    .grok-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(14, 17, 23, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .grok-assistant {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border: 2px solid #00d4ff;
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 500px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 212, 255, 0.3);
+        animation: grokFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes grokFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .grok-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00d4ff 0%, #0066cc 100%);
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        animation: pulse 2s infinite;
     }
     
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        text-align: center;
+        background: #1a1a2e;
+        border: 1px solid #333;
+        border-radius: 10px;
+        padding: 1rem;
         margin: 0.5rem 0;
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        border-color: #00d4ff;
+        box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
     }
     
     .alert-card {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-        color: #d63031;
+        background: #2d1b1b;
+        border-left: 4px solid #ff4757;
+        border-radius: 5px;
         padding: 1rem;
-        border-radius: 10px;
-        border-left: 5px solid #d63031;
         margin: 1rem 0;
     }
     
     .response-card {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
+        background: #1a2e1a;
+        border-left: 4px solid #2ed573;
+        border-radius: 10px;
         padding: 1.5rem;
-        border-radius: 15px;
         margin: 1rem 0;
+    }
+    
+    .query-card {
+        background: #1a1a2e;
+        border-left: 4px solid #00d4ff;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .sidebar .sidebar-content {
+        background-color: #0e1117;
+    }
+    
+    .stSelectbox > div > div {
+        background-color: #1a1a2e;
+        border: 1px solid #333;
+        color: #fafafa;
+    }
+    
+    .stButton > button {
+        background: linear-gradient(135deg, #00d4ff 0%, #0066cc 100%);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+    }
+    
+    .footer {
+        background: #1a1a2e;
+        border-top: 1px solid #333;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 3rem;
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# Comprehensive utility-specific queries and responses
+UTILITY_QUERIES = {
+    "Emergency Procedures": [
+        "Emergency shutdown sequence for 345kV transmission line",
+        "SCADA lockout procedures during equipment failure", 
+        "Storm restoration priorities for critical infrastructure",
+        "Gas leak response protocol near electrical equipment",
+        "Coordinated outage procedures with neighboring utilities"
+    ],
+    "Equipment Diagnostics": [
+        "SF6 gas pressure analysis in circuit breakers",
+        "Transformer oil dissolved gas analysis interpretation", 
+        "Power factor testing on 138kV cable systems",
+        "Partial discharge testing on switchgear",
+        "Infrared thermography patterns for conductor issues"
+    ],
+    "Maintenance Procedures": [
+        "Live line maintenance on 69kV distribution circuits",
+        "Substation grounding system testing procedures",
+        "Capacitor bank switching operations",
+        "Underground cable fault location techniques", 
+        "Protective relay coordination testing"
+    ],
+    "Safety Protocols": [
+        "Arc flash hazard assessment for 480V motor control centers",
+        "Personal protective equipment for energized work",
+        "Minimum approach distances for different voltage levels",
+        "Lock-out/tag-out procedures for transmission equipment",
+        "Confined space entry for underground vaults"
+    ],
+    "System Operations": [
+        "Load forecasting during extreme weather events",
+        "Voltage regulation using capacitor banks and LTCs", 
+        "Economic dispatch optimization for peak demand",
+        "Renewable energy integration impact on grid stability",
+        "Demand response program activation procedures"
+    ]
+}
+
+DETAILED_RESPONSES = {
+    "Emergency shutdown sequence for 345kV transmission line": {
+        "answer": "345kV transmission line emergency shutdown requires: 1) Immediate notification to System Operations Center, 2) Verify protection operation and identify faulted section, 3) Open line terminals at both substations using SCADA, 4) Perform switching to isolate the line completely, 5) Ground the line using portable grounds, 6) Notify neighboring utilities of system impact. Critical: Maintain N-1 contingency throughout process. Estimated restoration time: 4-6 hours pending damage assessment.",
+        "sources": ["NERC Operating Manual Section 8.3", "Company Emergency Response Procedures", "345kV Line Protection Schemes"],
+        "confidence": 0.98,
+        "risk_level": "CRITICAL",
+        "estimated_time": "45 minutes",
+        "personnel_required": "2 System Operators, 1 Field Supervisor, 4 Line Crew"
+    },
+    "SF6 gas pressure analysis in circuit breakers": {
+        "answer": "SF6 gas pressure monitoring indicates breaker operational status. Normal pressure: 6-7 bar at 20°C. Low pressure alarm at 5.5 bar requires immediate attention - reduces interrupting capability. Pressure below 5 bar = lockout condition. Temperature compensation essential: +0.07 bar per 10°C increase. Moisture content must be <150ppm. Annual leak rate should not exceed 0.5% of nameplate quantity. Gas purity testing required if pressure drops >10% annually.",
+        "sources": ["IEEE C37.122.1 Standard", "SF6 Gas Handling Procedures", "Circuit Breaker Maintenance Manual"],
+        "confidence": 0.95,
+        "risk_level": "MEDIUM",
+        "estimated_time": "30 minutes testing",
+        "personnel_required": "1 Certified SF6 Technician"
+    },
+    "Arc flash hazard assessment for 480V motor control centers": {
+        "answer": "480V MCC arc flash assessment requires: 1) Calculate incident energy using IEEE 1584 standard, 2) Typical values range 8-40 cal/cm² at 18 inches, 3) PPE Category 2-4 required based on calculation, 4) Arc flash boundary typically 4-8 feet, 5) Working distance must be >18 inches minimum. Install arc flash labels showing: incident energy, arc flash boundary, PPE category, working distance. Update every 5 years or after system modifications.",
+        "sources": ["NFPA 70E Standard", "IEEE 1584 Arc Flash Guide", "Company Electrical Safety Manual"],
+        "confidence": 0.96,
+        "risk_level": "HIGH", 
+        "estimated_time": "2 hours assessment",
+        "personnel_required": "1 Electrical Engineer, 1 Safety Coordinator"
+    },
+    "Load forecasting during extreme weather events": {
+        "answer": "Extreme weather load forecasting adjustments: 1) Summer heat waves: +15-25% peak demand per 10°F above normal, 2) Winter storms: +20-30% heating load, potential service interruptions, 3) Use temperature-load regression models with weather service data, 4) Activate demand response programs when forecast exceeds 95% of peak capacity, 5) Pre-position emergency resources based on 72-hour weather outlook. Monitor real-time SCADA vs forecast every 15 minutes during events.",
+        "sources": ["Load Forecasting Procedures", "Weather Service Partnership Agreement", "Emergency Operations Manual"],
+        "confidence": 0.92,
+        "risk_level": "MEDIUM",
+        "estimated_time": "Continuous monitoring",
+        "personnel_required": "Load Dispatcher, Weather Analyst"
+    },
+    "Transformer oil dissolved gas analysis interpretation": {
+        "answer": "DGA interpretation for power transformers: H2 >100ppm indicates overheating. C2H2 >3ppm = arcing/electrical fault. C2H4/C2H6 ratio >1 = thermal fault >700°C. CO/CO2 ratio >0.3 = paper insulation degradation. Total Combustible Gas >720ppm requires immediate investigation. Key fault gases: H2+CH4 = partial discharge, C2H2+C2H4 = arcing, C2H4+C2H6 = thermal. Schedule quarterly testing for units >20MVA. Emergency actions required if gases double in 30 days.",
+        "sources": ["IEEE C57.104 DGA Standard", "Transformer Diagnostic Manual", "Oil Testing Laboratory Procedures"],
+        "confidence": 0.97,
+        "risk_level": "VARIABLE",
+        "estimated_time": "48 hours lab results",
+        "personnel_required": "Transformer Specialist, Lab Technician"
+    }
+}
+
+# Grok-4 Assistant Overlay
+if st.session_state.grok_visible:
+    st.markdown(f"""
+    <div class="grok-overlay" id="grok-overlay">
+        <div class="grok-assistant">
+            <div class="grok-avatar">🤖</div>
+            <h2 style="color: #00d4ff; margin-bottom: 1rem;">Grok-4 Assistant Ready</h2>
+            <p style="font-size: 1.1em; line-height: 1.6; margin-bottom: 1.5rem;">
+                Hello there! I'm Grok-4, your friendly AI assistant for grid operations. 
+                I'm here to help with anything you need - from emergency procedures to complex technical analysis.
+                Ready to make your day easier and keep the lights on! ⚡
+            </p>
+            <button onclick="document.getElementById('grok-overlay').style.display='none'" 
+                    style="background: linear-gradient(135deg, #00d4ff 0%, #0066cc 100%); 
+                           color: white; border: none; border-radius: 25px; 
+                           padding: 12px 30px; font-size: 1rem; cursor: pointer;
+                           transition: all 0.3s ease;">
+                Let's Get Started! 🚀
+            </button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 # Main header
-st.markdown('<div class="main-header">⚡ Predictive Grid Intelligence RAG System</div>', unsafe_allow_html=True)
-st.markdown("### **Next-Generation AI Co-Pilot for Proactive Grid Operations**")
+st.markdown('<div class="main-header">⚡ Predictive Grid Intelligence</div>', unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888; font-size: 1.1rem;'>Next-Generation AI Assistant for Utility Operations</p>", unsafe_allow_html=True)
 
 # Sidebar
-st.sidebar.markdown("## 🎭 User Persona")
-persona = st.sidebar.selectbox("Select Your Role:", [
-    "Field Technician", 
-    "Grid Engineer", 
-    "Operations Manager"
-])
+with st.sidebar:
+    st.markdown("### 👤 User Profile")
+    persona = st.selectbox("Select Your Role:", [
+        "Field Technician", 
+        "System Operator",
+        "Protection Engineer", 
+        "Operations Manager",
+        "Maintenance Supervisor"
+    ])
+    st.session_state.user_persona = persona
 
-st.sidebar.markdown("## 🔧 AI Features")
-real_time_data = st.sidebar.checkbox("Real-time IoT Integration", value=True)
-ar_mode = st.sidebar.checkbox("AR Mode", value=False)
+    st.markdown("### 🔧 System Status")
+    st.markdown("**AI Model:** xAI Grok-4 Turbo")
+    st.markdown("**Status:** 🟢 Online")
+    st.markdown("**Response Time:** 0.8s avg")
+    st.markdown("**Confidence:** 96.4%")
 
 # Navigation
 page = st.sidebar.radio("Navigate:", [
-    "🎯 Dashboard", 
-    "🤖 RAG Demo", 
-    "🏗️ Architecture"
+    "🎯 Operations Dashboard", 
+    "🤖 Intelligent Assistant", 
+    "🏗️ System Architecture"
 ])
 
-if page == "🎯 Dashboard":
-    st.markdown(f"## Welcome, {persona}!")
+if page == "🎯 Operations Dashboard":
+    st.markdown(f"### Welcome, {persona}")
     
-    # Real-time metrics
-    if real_time_data:
-        st.markdown("### 📡 Real-Time Grid Intelligence")
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            st.markdown('<div class="metric-card"><h3>🟢 Normal</h3><p>Transformer A1</p></div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown('<div class="metric-card"><h3>🟡 Warning</h3><p>Circuit B4</p></div>', unsafe_allow_html=True)
-        with col3:
-            st.markdown('<div class="metric-card"><h3>🔴 Critical</h3><p>Cable C2</p></div>', unsafe_allow_html=True)
-        with col4:
-            st.markdown('<div class="metric-card"><h3>🟢 Normal</h3><p>Substation D</p></div>', unsafe_allow_html=True)
-    
-    # Predictive alerts
-    st.markdown("### 🔮 Predictive Maintenance Alerts")
-    st.markdown("""
-    <div class="alert-card">
-    <strong>🔴 CRITICAL</strong> - Circuit Breaker B4<br>
-    <strong>Prediction:</strong> Failure likely in 72 hours<br>
-    <strong>Confidence:</strong> 87%<br>
-    <strong>Action:</strong> Schedule immediate inspection
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Key metrics
-    st.markdown("### 📊 System Performance")
-    
+    # Real-time grid status
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Prediction Accuracy", "94.7%", "↑2.1%")
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #2ed573;">System Load</h4>
+        <h2>2,847 MW</h2>
+        <small>87% of capacity</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
     with col2:
-        st.metric("Cost Savings", "$4.2M", "↑$0.3M")
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #ffa502;">Alerts Active</h4>
+        <h2>12</h2>
+        <small>3 critical, 9 warnings</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
     with col3:
-        st.metric("Escalation Reduction", "85%", "↑5%")
+        st.markdown("""
+        <div class="metric-card">
+        <h4 style="color: #00d4ff;">Equipment Status</h4>
+        <h2>98.7%</h2>
+        <small>Available capacity</small>
+        </div>
+        """, unsafe_allow_html=True)
+        
     with col4:
-        st.metric("Response Time", "0.8s", "↓0.2s")
-
-elif page == "🤖 RAG Demo":
-    st.markdown("## Advanced RAG with xAI Grok-4")
-    
-    # AR Mode
-    if ar_mode:
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%); 
-                    padding: 1.5rem; border-radius: 15px; border: 3px solid #ff6b6b; margin: 1rem 0;">
-        <h4>🥽 AR Mode Active</h4>
-        <p><strong>Camera Feed:</strong> Real-time equipment identification</p>
-        <p><strong>Voice Recognition:</strong> "Hey Grok, show transformer wiring"</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Query interface
-    st.markdown("### 🧠 Intelligent Query Processing")
-    
-    query_options = [
-        "What are the emergency shutdown procedures for a 138kV transformer?",
-        "How can I predict equipment failure in section 4B?",
-        "What PPE is required for live wire maintenance?"
-    ]
-    
-    user_query = st.selectbox("Select query:", query_options)
-    
-    if st.button("🚀 Query Grok-4"):
-        with st.spinner("Processing with xAI Grok-4..."):
-            time.sleep(2)
-        
-        # Mock response
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; padding: 1rem; border-radius: 15px; margin: 1rem 0;">
-        <strong>👨‍🔧 {persona}:</strong> {user_query}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="response-card">
-        <strong>🤖 Grok-4 Assistant:</strong><br><br>
-        Emergency shutdown requires: 1) SCADA notification, 2) Sequential disconnect A→B→C, 
-        3) Ground fault verification, 4) Thermal imaging confirmation, 5) Smart lock installation.
-        Current transformer shows normal thermal signature (85.2°C vs 90°C threshold).<br><br>
-        <strong>📚 Sources:</strong> Grid Operations Manual v3.2, Real-time SCADA Data<br>
-        <strong>📊 Confidence:</strong> 97%<br>
-        <strong>🔮 Prediction:</strong> No immediate shutdown required - system stable
+        <div class="metric-card">
+        <h4 style="color: #ff4757;">Outages</h4>
+        <h2>3</h2>
+        <small>2,447 customers affected</small>
         </div>
         """, unsafe_allow_html=True)
 
-elif page == "🏗️ Architecture":
-    st.markdown("## Next-Generation Architecture")
-    
-    # Architecture flow
+    # Active alerts
+    st.markdown("### 🚨 Priority Alerts")
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                color: white; padding: 2rem; border-radius: 15px; margin: 2rem 0; text-align: center;">
-    <h3>🔄 Predictive Grid Intelligence Flow</h3>
-    <p style="font-size: 1.2em; line-height: 2;">
-    <strong>IoT Sensors</strong> → <strong>xAI Grok-4</strong> → <strong>Vector DB</strong> → 
-    <strong>Predictive Engine</strong> → <strong>AR Interface</strong> → <strong>Field Operations</strong>
-    </p>
+    <div class="alert-card">
+    <strong>CRITICAL:</strong> Transformer T-138-04 - High dissolved gas levels detected<br>
+    <strong>Location:</strong> Riverside Substation<br>
+    <strong>Action Required:</strong> Schedule immediate oil analysis and consider outage planning<br>
+    <strong>ETA:</strong> Investigation within 4 hours
+    </div>
+    """, unsafe_allow_html=True)
+
+elif page == "🤖 Intelligent Assistant":
+    st.markdown("### 🧠 Grok-4 Intelligent Assistant")
+    st.markdown("Ask me anything about utility operations, and I'll provide detailed, expert-level guidance.")
+    
+    # Query category selection
+    category = st.selectbox("Select Query Category:", list(UTILITY_QUERIES.keys()))
+    
+    # Specific query selection based on category
+    specific_query = st.selectbox("Choose Specific Query:", UTILITY_QUERIES[category])
+    
+    # Custom query option
+    custom_query = st.text_input("Or enter your own question:")
+    
+    # Use custom query if provided, otherwise use selected query
+    active_query = custom_query if custom_query else specific_query
+    
+    if st.button("🚀 Ask Grok-4"):
+        # Add to conversation history
+        st.session_state.conversation_history.append({
+            "role": "user",
+            "content": active_query,
+            "timestamp": datetime.now().strftime("%H:%M:%S"),
+            "persona": persona
+        })
+        
+        with st.spinner("Grok-4 is analyzing your query..."):
+            time.sleep(random.uniform(1.5, 3.0))  # Realistic processing time
+            
+        # Display user query
+        st.markdown(f"""
+        <div class="query-card">
+        <strong>👨‍🔧 {persona}:</strong><br>
+        {active_query}
+        <div style="text-align: right; font-size: 0.8em; color: #888; margin-top: 0.5rem;">
+        {st.session_state.conversation_history[-1]["timestamp"]}
+        </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Generate response
+        if active_query in DETAILED_RESPONSES:
+            response = DETAILED_RESPONSES[active_query]
+            
+            # Add response to conversation history
+            st.session_state.conversation_history.append({
+                "role": "assistant", 
+                "content": response["answer"],
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+            
+            # Display detailed response
+            st.markdown(f"""
+            <div class="response-card">
+            <h4>🤖 Grok-4 Assistant Response:</h4>
+            <p style="margin: 1rem 0; line-height: 1.6;">{response['answer']}</p>
+            
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #333;">
+            <strong>📚 Sources:</strong> {' • '.join(response['sources'])}<br>
+            <strong>📊 Confidence:</strong> {response['confidence']:.0%}<br>
+            <strong>⚠️ Risk Level:</strong> {response['risk_level']}<br>
+            <strong>⏱️ Estimated Time:</strong> {response['estimated_time']}<br>
+            <strong>👥 Personnel:</strong> {response['personnel_required']}
+            </div>
+            
+            <div style="text-align: right; font-size: 0.8em; color: #888; margin-top: 1rem;">
+            Response generated at {st.session_state.conversation_history[-1]["timestamp"]}
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        else:
+            # Generic response for custom queries
+            generic_responses = [
+                "Based on industry standards and utility best practices, I recommend consulting the relevant NERC standards and your company's specific procedures for this situation. Would you like me to help you identify the specific standards that apply?",
+                "This is an excellent question that requires careful consideration of safety protocols and operational procedures. Let me break down the key factors you should consider...",
+                "From my analysis of utility industry practices, this situation typically involves multiple considerations including safety, reliability, and regulatory compliance. Here's my recommended approach..."
+            ]
+            
+            response_text = random.choice(generic_responses)
+            
+            st.session_state.conversation_history.append({
+                "role": "assistant",
+                "content": response_text,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+            
+            st.markdown(f"""
+            <div class="response-card">
+            <h4>🤖 Grok-4 Assistant Response:</h4>
+            <p style="margin: 1rem 0; line-height: 1.6;">{response_text}</p>
+            
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #333;">
+            <strong>📊 Confidence:</strong> 89%<br>
+            <strong>💡 Suggestion:</strong> For specific procedures, please consult your utility's operating manual
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Display conversation history
+    if st.session_state.conversation_history:
+        with st.expander("📜 Conversation History", expanded=False):
+            for i, msg in enumerate(st.session_state.conversation_history):
+                if msg["role"] == "user":
+                    st.markdown(f"**{msg.get('persona', 'User')}** ({msg['timestamp']}): {msg['content']}")
+                else:
+                    st.markdown(f"**🤖 Grok-4** ({msg['timestamp']}): {msg['content'][:200]}...")
+
+elif page == "🏗️ System Architecture":
+    st.markdown("### 🏗️ Advanced System Architecture")
+    
+    # Architecture flow diagram
+    st.markdown("""
+    <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 2rem; text-align: center; margin: 2rem 0;">
+    <h4 style="color: #00d4ff;">Predictive Grid Intelligence Data Flow</h4>
+    <div style="font-size: 1.1em; line-height: 2; margin-top: 1rem;">
+    <strong>Field Sensors</strong> → <strong>Edge Computing</strong> → <strong>xAI Grok-4</strong> → 
+    <strong>Vector Database</strong> → <strong>Predictive Engine</strong> → <strong>Operations Interface</strong>
+    </div>
     </div>
     """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 🧠 AI/ML Stack")
+        st.markdown("#### 🧠 AI Core Components")
         st.markdown("""
-        **🚀 xAI Grok-4 Integration**
-        - Superior reasoning for technical domains
-        - Reduced hallucination on STEM content
-        - Custom fine-tuning on grid data
-        
-        **🔍 Hybrid Vector Search**
-        - Pinecone for scalable operations
-        - Multi-hop retrieval capabilities
-        - 90% prediction accuracy
+        - **xAI Grok-4**: Advanced reasoning for technical domains
+        - **Vector Database**: Semantic search across utility documentation  
+        - **Real-time Analytics**: IoT sensor data processing
+        - **Predictive Models**: Equipment failure forecasting
+        - **Natural Language**: Voice and text query processing
         """)
         
     with col2:
-        st.markdown("### 🌐 Infrastructure")
+        st.markdown("#### 🔒 Security & Compliance")
         st.markdown("""
-        **☁️ Cloud-Native Deployment**
-        - Kubernetes auto-scaling
-        - Multi-region availability
-        - 99.99% SLA guarantee
-        
-        **🔐 Security & Compliance**
-        - Zero-trust architecture
-        - NERC CIP compliance
-        - Blockchain verification
+        - **Zero-trust Architecture**: Multi-layer security model
+        - **NERC CIP Compliance**: Critical infrastructure protection
+        - **Encrypted Communications**: End-to-end data protection
+        - **Audit Logging**: Complete operational traceability
+        - **Role-based Access**: Granular permission controls
         """)
+    
+    # Performance metrics
+    st.markdown("#### 📊 System Performance")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Query Response", "0.8s", "-0.2s")
+    with col2:
+        st.metric("Accuracy Rate", "96.4%", "+1.2%")  
+    with col3:
+        st.metric("Uptime", "99.97%", "+0.02%")
+    with col4:
+        st.metric("Active Users", "847", "+23")
 
 # Footer
-st.markdown("---")
 st.markdown("""
-<div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-<h3>⚡ Predictive Grid Intelligence RAG System</h3>
-<p><strong>Next-Generation AI Co-Pilot for Proactive Grid Operations</strong></p>
-<p><em>Powered by xAI Grok-4 • Multi-Modal RAG • Enterprise Ready</em></p>
+<div class="footer">
+<h4 style="color: #00d4ff;">⚡ Predictive Grid Intelligence</h4>
+<p>Powered by xAI Grok-4 • Enterprise-Ready • Real-time Operations</p>
+<p style="font-size: 0.9em; color: #666;">Advanced AI system for next-generation utility operations</p>
 </div>
 """, unsafe_allow_html=True)
+
+# Hide Grok overlay after first view
+if st.session_state.grok_visible:
+    st.session_state.grok_visible = False
