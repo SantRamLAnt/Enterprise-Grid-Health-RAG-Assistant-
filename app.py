@@ -141,12 +141,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Grok-4 Assistant Overlay
+# Grok-4 Assistant Welcome Screen (NO HTML OVERLAY)
 if not st.session_state.assistant_dismissed:
+    # Use Streamlit's native styling instead of HTML overlay
     st.markdown("""
-    <div class="grok-overlay">
-        <div class="grok-assistant">
-            <div class="grok-avatar">🤖</div>
+    <style>
+    .main > div {
+        background: #0d1117;
+        padding: 0;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Create centered welcome content
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    
+    # Center the Grok-4 card
+    col1, col2, col3 = st.columns([1, 3, 1])
+    
+    with col2:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                    border: 2px solid #3b82f6; border-radius: 20px; padding: 2rem; 
+                    text-align: center; box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3); 
+                    margin: 2rem 0;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                        margin: 0 auto 1rem auto; font-size: 2rem;">🤖</div>
             <h2 style="color: #3b82f6; margin-bottom: 1rem;">Grok-4 Assistant Ready</h2>
             <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 1.5rem; color: #f0f0f0;">
                 Hello there! I'm Grok-4, your friendly AI assistant for electric utility operations. 
@@ -154,12 +175,11 @@ if not st.session_state.assistant_dismissed:
                 technical analysis. Ready to make your day easier and keep the lights on! ⚡
             </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Create centered button to dismiss overlay
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
+        """, unsafe_allow_html=True)
+        
+        # Add the launch button right after the card
+        st.markdown("<br>", unsafe_allow_html=True)
+        
         if st.button("🚀 Let's Get Started", type="primary", use_container_width=True):
             st.session_state.assistant_dismissed = True
             st.rerun()
